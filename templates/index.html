@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food App</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .food-item { margin-bottom: 15px; }
+        .button { padding: 8px 16px; cursor: pointer; }
+        #food-list { margin-top: 20px; }
+
+        /* Modal Styles */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .close {
+            padding: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Food App</h1>
+
+<div>
+    <h2>Add New Food Item</h2>
+    <input type="text" id="name" placeholder="Food Name">
+    <input type="text" id="description" placeholder="Food Description">
+    <input type="number" id="price" placeholder="Price">
+    <button class="button" onclick="addFood()">Add Food</button>
+</div>
+
+<div>
+    <h2>Update Food Item</h2>
+    <input type="number" id="update-id" placeholder="Food ID">
+    <input type="text" id="update-name" placeholder="New Name">
+    <input type="text" id="update-description" placeholder="New Description">
+    <input type="number" id="update-price" placeholder="New Price">
+    <button class="button" onclick="updateFood()">Update Food</button>
+</div>
+
+<div>
+    <h2>Delete Food Item</h2>
+    <input type="number" id="delete-id" placeholder="Food ID">
+    <button class="button" onclick="deleteFood()">Delete Food</button>
+</div>
+
+<h2>Food Items List</h2>
+<div id="food-list"></div>
+
+<!-- Modal for success message -->
+<div id="modal">
+    <div id="modal-content">
+        <h3>Food Item Added!</h3>
+        <p>Your food item has been successfully added.</p>
+        <button class="close" onclick="closeModal()">Close</button>
+    </div>
+</div>
+
+<script>
+    const apiUrl = 'http://127.0.0.1:8000/foods/';
+
+    // Function to fetch and display food items
+    async function fetchFoods() {
+        const response = await fetch(apiUrl);
+        const foodItems = await response.json();
+        const foodListDiv = document.getElementById('food-list');
+        foodListDiv.innerHTML = '';
+        
+        foodItems.forEach(item => {
+            foodListDiv.innerHTML += `<div class="food-item">
+                <strong>${item.name}</strong><br>
+                Description: ${item.description}<br>
+                Price: $${item.price}<br>
+                <button class="button" onclick="editFood(${item.id})">Edit</button>
+                <button class="button" onclick="removeFood(${item.id})">Delete</button>
+            </div>`;
+        });
+    }
+
+    // Function to add new food item
+    async function addFood() {
+        const name = document.getElementById('name').value;
+        const description = document.getElementById('description').value;
+        const price = document.getElementById('price').value;
+
+        const newFood = { name, description, price: parseFloat(price) };
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newFood),
+        });
+
+        if (response.ok) {
+            fetchFoods();
+            showModal();  // Show the modal dialog when the food is added successfully
+        }
+    }
+
+    // Function to update an existing food item
+    async function updateFood() {
+        const id = document.getElementById('update-id').value;
+        const name = document.getElementById('update-name').value;
+        const description = document.getElementById('update-description').value;
+        const price = document.getElementById('update-price').value;
+
+        const updatedFood = { id: parseInt(id), name, description, price: parseFloat(price) };
+
+        const response = await fetch('${apiUrl}${id}', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedFood),
+        });
+
+        if (response.ok) {
+            fetchFoods();
+        }
+    }
+
+    // Function to delete food item
+    async function deleteFood() {
+        const id = document.getElementById('delete-id').value;
+
+        const response = await fetch('${apiUrl}${id}', {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            fetchFoods();
+        }
+    }
+
+    // Function to handle edit (for future patch)
+    async function editFood(id) {
+        const response = await fetch('${apiUrl}${id}');
+        const food = await response.json();
+        
+        document.getElementById('update-id').value = food.id;
+        document.getElementById('update-name').value = food.name;
+        document.getElementById('update-description').value = food.description;
+        document.getElementById('update-price').value = food.price;
+    }
+
+    // Function to remove food item (for delete)
+async function removeFood(id) {
+    const response = await fetch('${apiUrl}${id}', {
+        method: 'DELETE',
+    });
+
+    if (response.ok) {
+        fetchFoods();
+    }
+}
